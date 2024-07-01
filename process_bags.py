@@ -55,6 +55,7 @@ vehicle_info = {
         (
             "shadow",
             "casper",
+            "bullwinkle",
         ),
     ),
     "buoy": (
@@ -129,7 +130,8 @@ def identify_date(bag: Bag):
 def is_rename_necessary(filename: str):
     """
     Evaluate whether or not the bag file has a "valid" filename, i.e. a
-    filename that can be parsed correctly by the bag upload script.
+    filename that can be parsed correctly by the bag upload script. Correct
+    name format: (vehicletype)_(vehiclename)_(msn_)datetime.bag
 
     Args:
         filename (str): The name of the bag file to evaluate.
