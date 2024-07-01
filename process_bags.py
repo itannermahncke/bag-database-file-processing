@@ -63,6 +63,7 @@ vehicle_info = {
         (
             "sugar",
             "skipper",
+            "shrew",
         ),
     ),
     # vehicle_type: (unique_message_type, (list, of, vehicles)),
@@ -95,10 +96,14 @@ def get_csrf_token(s: Session):
     """
     log("Retrieving CSRF token.")
     html = s.get(URL).text
+    log("Got html")
     soup = BeautifulSoup(html, "lxml")
     csrf = None
+    log("Finding string with token")
     script_items = soup.find(string=re.compile("csrfToken")).split(";")
-    for string in script_items:
+    log("Found")
+    for i, string in enumerate(script_items):
+        log(f"Step {i} of {len(script_items) - 1}")
         if "csrfToken" in string:
             csrf = string[string.find('"') + 1 : len(string) - 1]
     log(f"Token: {csrf}")
@@ -250,11 +255,11 @@ def generate_tags(bag: Bag):
     Returns:
         dict: A dictionary of tags to be published as metadata.
     """
-    bagname = str(bag.filename).rsplit("/", 1)
-    log(f"-Atempting to tag {bagname}")
+    bagname = str(bag.filename).rsplit("/", 1)[1]
+    log(f"-Attempting to tag {bagname}")
 
     # establish variables for tagging
-    bag_name_list = bagname[1].split("_")
+    bag_name_list = bagname.split("_")
     tags = {}
 
     # set universally possessed tags
@@ -358,8 +363,7 @@ def process_bags():
     """
     # some paths
     thisdir = Path.cwd()
-    post_folder = Path(thisdir / "uploaded")
-    post_folder.mkdir(exist_ok=True)
+    post_folder = "uploaded"
 
     # other useful variables
     bagfiles = list(thisdir.glob({True: "**/*.bag", False: "*.bag"}[IS_RECURSIVE]))
@@ -376,7 +380,7 @@ def process_bags():
             log(f"Processing bag {bagpath.name} ({i}/{net})")
             i += 1
             # avoid bags that have already been uploaded
-            if bagpath.parents[0] != post_folder:  # irrelevant when nonrecursive
+            if bagpath.parts[-1] != post_folder:  # irrelevant when nonrecursive
                 # if bag has a good filename, or was renamed adequately
                 rename_results, bagpath = standard_rename(bagpath)
                 if rename_results:
@@ -395,7 +399,8 @@ def process_bags():
                     post_status = prep_and_post(bagpath, sesh, csrf)
                     if post_status == "200":
                         log("Successful file upload. Moving file to subdirectory.")
-                        bagpath.rename(post_folder / bagpath.name)
+                        Path(bagpath.parent / post_folder).mkdir(exist_ok=True)
+                        bagpath.rename(bagpath.parent / post_folder / bagpath.name)
                     else:
                         log(f"Post request failed with status code {post_status}.")
                 else:
@@ -404,7 +409,7 @@ def process_bags():
                         + "to be uploaded safely. Skipping bag without upload."
                     )
             else:
-                log(f"Ignoring pre-existing bag {bagpath.name} in '{post_folder.name}'")
+                log(f"Ignoring pre-existing bag {bagpath.name} in '{bagpath.parent}'")
 
 
 if __name__ == "__main__":
